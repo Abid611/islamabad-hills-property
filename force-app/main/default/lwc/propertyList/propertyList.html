@@ -9,10 +9,123 @@
                 <lightning-datatable
                     key-field="Id"
                     data={data}
-                    columns={columns}>
+                    columns={columns}
+                    onrowaction={handleRowAction}
+                    hide-checkbox-column>
                 </lightning-datatable>
             </div>
         </lightning-card>
     </div>
+    <!-- Modal Section -->
+    <template if:true={isModalOpen}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- Modal Header -->
+                <header class="slds-modal__header slds-modal__header_empty">
+                    <h2 class="slds-modal__title slds-hyphenate">Rent This Property</h2>
+                </header>
+    
+                <!-- Modal Body -->
+                <div class="slds-modal__content slds-p-around_medium" style="min-height: 200px;">
+                    
+                    <!-- Property Info Box -->
+                    <div class="slds-box slds-theme_shade slds-m-bottom_medium">
+                        <p><strong>Property Name:</strong> {selectedProperty.Name}</p>
+                        <p><strong>Type:</strong> {selectedProperty.Type__c}</p>
+                        <p><strong>Rent Amount:</strong> {selectedProperty.Rent_Amount__c}</p>
+                    </div>
+    
+                    <!-- Form Fields -->
+                    <div class="slds-form slds-form_stacked">
+                        <!-- Tenant Lookup Section -->
+                    <div class="slds-form-element slds-m-bottom_medium">
+                        <label class="slds-form-element__label">Search Tenant</label>
+                        <div class="slds-form-element__control">
+                            <lightning-input 
+                                value={tenantSearchKey}
+                                onchange={handleTenantSearch}
+                                placeholder="Type to search existing tenants">
+                            </lightning-input>
+                        </div>
+
+                        <!-- Suggestions dropdown -->
+                        <template if:true={hasTenantResults}>
+                            <div class="slds-box slds-theme_default slds-scrollable_y" style="max-height: 150px;">
+                                <template for:each={tenantOptions} for:item="tenant">
+                                    <div 
+                                        key={tenant.Id}
+                                        data-id={tenant.Id}
+                                        onclick={selectTenant}
+                                        class="slds-p-vertical_x-small slds-text-link">
+                                        {tenant.Name}
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                        <div 
+                            class="slds-p-vertical_x-small slds-text-link slds-text-color_brand"
+                            onclick={createTenantRecord}>
+                            + Create New Tenant
+                        </div>
+
+                    </div>
+
+                        <lightning-input 
+                            class="slds-m-bottom_small"
+                            type="text" 
+                            label="Ejari Number"
+                            maxlength="16"
+                            pattern="[0-9]*"
+                            onkeypress={restrictToNumbers}
+                            name="ejariNumber" 
+                            value={ejariNumber} 
+                            onchange={handleInputChange} 
+                            required>
+                        </lightning-input>
+                
+                        <lightning-input 
+                            class="slds-m-bottom_small"
+                            type="date" 
+                            label="Start Date" 
+                            name="startDate" 
+                            value={startDate} 
+                            onchange={handleInputChange} 
+                            required>
+                        </lightning-input>
+    
+                        <lightning-input 
+                            class="slds-m-bottom_small"
+                            type="date" 
+                            label="End Date" 
+                            name="endDate" 
+                            value={endDate} 
+                            onchange={handleInputChange} 
+                            required>
+                        </lightning-input>
+                    </div>
+                </div>
+    
+                <!-- Modal Footer -->
+                <footer class="slds-modal__footer">
+                    <lightning-button 
+                        variant="neutral" 
+                        label="Cancel" 
+                        onclick={closeModal}
+                        class="slds-m-right_small">
+                    </lightning-button>
+                    <lightning-button 
+                        variant="brand" 
+                        label="Create Contract" 
+                        onclick={handleSubmit}>
+                    </lightning-button>
+                </footer>
+            </div>
+        </section>
+    
+        <!-- Backdrop -->
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+    
+    <!-- Modal Section -->
     
 </template>
