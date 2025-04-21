@@ -4,6 +4,8 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getAllProperties from '@salesforce/apex/PropertyController.getAllProperties';
 import searchTenants from '@salesforce/apex/TenantController.searchTenants';
 import createContract from '@salesforce/apex/RentalContractController.createRenatlContract';
+import checkAvailability from '@salesforce/apex/RentalContractController.checkAvailability';
+
 const columns = [
     
     { label: 'Name', fieldName: 'Name' },
@@ -12,14 +14,28 @@ const columns = [
     { label: 'Rent', fieldName: 'Rent_Amount__c' },
     { label: 'Status', fieldName: 'Status__c' },
     {
+        label: 'Action',
+        type: 'button',
+        typeAttributes: {
+            label: 'Check Availability',
+            name: 'check_availability',
+            variant: 'brand',
+            title: 'check for availability'
+        }    
+    },
+    {
+        label: 'Action',
         type: 'button',
         typeAttributes: {
             label: 'Rent Out',
             name: 'rent_out',
             variant: 'brand',
-            title: 'Rent this Property'
+            title: 'Rent this property',
+            disabled: { fieldName: 'disableRentOut' }
         }
     }
+    
+
 ];
 
 export default class PropertyList extends NavigationMixin(LightningElement) {
@@ -31,19 +47,35 @@ export default class PropertyList extends NavigationMixin(LightningElement) {
     @track tenantSearchKey = '';
     @track tenantOptions = [];
     @track selectedTenant = null;
-    @track ejariNumber = '';
     @track startDate= '';
     @track endDate = '';
-    
+    @track isPropertyAvailable = false;
+    @track selectedType='';
+    @track selectedRent=200000;
+    typeOptions = [
+        {label: 'All', value: ''},
+        {label: 'Studio', value: 'Studio'},
+        {label: 'Apartment', value: 'Apartment'},
+        {label: '1 Bedroom', value: '1 Bedroom'},
+        {label: '2 Bedroom', value: '2 Bedroom'},
+        {label: 'Villa', value: 'Villa'}
+    ];
 
     connectedCallback() {
         this.fetchData();        
     }
     fetchData(){
         this.isLoading = true;
-        getAllProperties()
+        getAllProperties({
+            propertyType: this.selectedType,
+            rentAmount: this.selectedRent? parseFloat(this.selectedRent) : null
+        })
             .then(result => {
-                this.data = result;
+                //this.data = result;
+                this.data = result.map(row => ({
+                    ...row,
+                    disableRentOut: true //  Rent Out disabled by default
+                }));
                 console.log('Data fetched:', result);
             })
             .catch(error => {
@@ -56,10 +88,17 @@ export default class PropertyList extends NavigationMixin(LightningElement) {
 
     handleRowAction(event){
         const actionName = event.detail.action.name;
-        const row = event.detail.row;
+        const row = event.detail.row;        
+        if(actionName === 'check_availability'){
+            this.selectedProperty = row;
+            //console.log('selected property unique id is: ', this.selectedProperty.Unique_Id__c);
+            this.handlePropertyAvailability();
+
+        }
         if(actionName === 'rent_out'){
             this.selectedProperty = row;
             this.isModalOpen = true;
+
         }
     }
 
@@ -105,7 +144,6 @@ export default class PropertyList extends NavigationMixin(LightningElement) {
             console.warn('Invalid input change:', field, value);
         }
     }
-
     createTenantRecord(){
         window.open('/lightning/o/Tenant__c/new', '_blank');
     }
@@ -118,24 +156,17 @@ export default class PropertyList extends NavigationMixin(LightningElement) {
             })
         );
     }
-    restrictToNumbers(event) {
-        const charCode = event.which ? event.which : event.keyCode;
-        // Allow only digits (0-9)
-        if (charCode < 48 || charCode > 57) {
-            event.preventDefault();
-        }
-    }
     handleSubmit(){
-        if(!this.selectedTenant || !this.startDate || !this.endDate || !this.ejariNumber){
+        if(!this.selectedTenant || !this.selectedTenant.Id){
+            this.showToast('Missing Fields', 'Please select a valid Tenant record.', 'error');
+            return;
+        }
+        if(!this.selectedTenant || !this.startDate || !this.endDate){
             this.showToast('Missing Feilds', 'Please fill all the required Fields!','error');
             return;
         }
         if(new Date(this.startDate) > new Date(this.endDate)){
             this.showToast('Invalid Date','End Date should be greater than Start Date','error');
-            return;
-        }
-        if(this.ejariNumber.length > 16 || this.ejariNumber.length < 16){
-            this.showToast('Invalid Ejari Number', 'Ejari Number must be 16 digits', 'error');
             return;
         }
         createContract({
@@ -144,7 +175,6 @@ export default class PropertyList extends NavigationMixin(LightningElement) {
             startDate: this.startDate,
             endDate: this.endDate,
             rentAmount: this.selectedProperty.Rent_Amount__c,
-            ejariNumber: this.ejariNumber
         })
         .then(result =>{
             this.showToast('Success', 'Contract Created Successfully!', 'success');
@@ -159,11 +189,11 @@ export default class PropertyList extends NavigationMixin(LightningElement) {
             });
         })
         .catch(error => {
-            console.log('🔥 Full error object:', JSON.stringify(error, null, 2));
+            console.log('Full error object:', JSON.stringify(error, null, 2));
         
             let message = 'Something went wrong.';
         
-            // ✅ Check FIELD_CUSTOM_VALIDATION_EXCEPTION inside pageErrors
+            // Check FIELD_CUSTOM_VALIDATION_EXCEPTION inside pageErrors
             if (
                 error?.body?.pageErrors &&
                 Array.isArray(error.body.pageErrors) &&
@@ -172,7 +202,7 @@ export default class PropertyList extends NavigationMixin(LightningElement) {
             ) {
                 message = error.body.pageErrors[0].message;
         
-            // ✅ Fallback checks
+            //  Fallback checks
             } else if (error?.body?.message) {
                 message = error.body.message;
         
@@ -186,6 +216,41 @@ export default class PropertyList extends NavigationMixin(LightningElement) {
             this.showToast('Error', message, 'error');
         });                
         
-    }
+    }  
+    async handlePropertyAvailability() {  
+        //console.log('selected property unique id inside handle method: ', this.selectedProperty.Unique_Id__c);          
+        try {
+            const result = await checkAvailability({ uniqueId: this.selectedProperty.Unique_Id__c });
     
+            if (result.isAvailable) {
+                this.isPropertyAvailable = true;
+                this.showToast('Success', 'Property is available!', 'success');
+                this.data = this.data.map(row => {
+                    if (row.Id === this.selectedProperty.Id) {
+                        return {
+                            ...row,
+                            disableRentOut: !result.isAvailable // 👈 true = disable, false = enable
+                        };
+                    }
+                    return row;
+                });
+              } else {
+                this.isPropertyAvailable = false;
+                this.showToast('Warning', 'Property is not available.', 'warning');
+              }
+    
+        } catch (error) {
+            console.error('Error during availability check:', error);
+            this.showToast('Error', 'Something went wrong', 'error');
+        }
+    }
+    handleTypeChange(event){
+        this.selectedType = event.detail.value;
+        this.fetchData();
+    }
+    handleRentChange(event){
+        this.selectedRent = event.detail.value;
+        this.fetchData();
+    }
+     
 }
