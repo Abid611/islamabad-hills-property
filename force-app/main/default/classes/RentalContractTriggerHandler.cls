@@ -174,6 +174,17 @@ public with sharing class RentalContractTriggerHandler {
             Messaging.sendEmail(customerEmailsForNotification);
         }
     }
+    public static void handleExpiryContract(List<Rental_Contract__c> newContracts, Map<Id,Rental_Contract__c> oldContracts){
+        Set<Id> contractIds = new Set<Id>();
+        for(Rental_Contract__c rc: newContracts){
+            if(rc.Contract_Status__c == 'Expired' && oldContracts.get(rc.Id).Contract_Status__c != 'Expired'){
+                contractIds.add(rc.Id);
+            }
+        }
+        if(!contractIds.isEmpty()){
+                System.enqueueJob(new ContractExpiryEmailJob(new List<Id> (contractIds)));
+        }
+    }
        
 
 }
