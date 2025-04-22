@@ -128,6 +128,7 @@ public with sharing class RentalContractTriggerHandler {
 
             } catch(Exception ex){
                 system.debug('Exception for Contract '+ rc.Id+ 'Message: '+ ex.getMessage());
+                ErrorLogger.logError('Callout',ex.getMessage(),'500', rc.Id,'RentalContractTriggerHandler.sendToEjariSystem');
             }
         }
         if(!contractsToUpdate.isEmpty()){

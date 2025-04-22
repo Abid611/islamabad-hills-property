@@ -51,6 +51,7 @@ public with sharing class RentalContractController {
         }catch (Exception ex){
                 responseWrapper.isValid = false;
                 responseWrapper.message = 'Error: '+ ex.getMessage();
+                ErrorLogger.logError('Callout',ex.getMessage(),'500', '','RentalContractController.validateEjari');
         }
         return responseWrapper;
     }
@@ -81,6 +82,7 @@ public with sharing class RentalContractController {
         } catch (Exception ex) {
             responseWrapper.isAvailable = false;
             responseWrapper.message = 'Error: ' + ex.getMessage();
+            ErrorLogger.logError('Callout',ex.getMessage(),'500', '','RentalContractController.checkAvailability');
         }
 
         return responseWrapper;
