@@ -22,6 +22,7 @@ trigger RentalContractTrigger on Rental_Contract__c (before insert, before updat
         }
         if(Trigger.isUpdate){
             RentalContractTriggerHandler.handlePostUpdate(Trigger.New,Trigger.oldMap);
+            RentalContractTriggerHandler.handleExpiryContract(Trigger.New,Trigger.oldMap);
         }
         if(Trigger.isDelete){
 
