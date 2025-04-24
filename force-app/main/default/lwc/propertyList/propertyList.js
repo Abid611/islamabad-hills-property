@@ -229,7 +229,7 @@ export default class PropertyList extends NavigationMixin(LightningElement) {
                     if (row.Id === this.selectedProperty.Id) {
                         return {
                             ...row,
-                            disableRentOut: !result.isAvailable // 👈 true = disable, false = enable
+                            disableRentOut: !result.isAvailable 
                         };
                     }
                     return row;
