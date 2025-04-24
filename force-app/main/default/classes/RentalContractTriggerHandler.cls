@@ -134,8 +134,7 @@ public with sharing class RentalContractTriggerHandler {
         if(!contractsToUpdate.isEmpty()){
             update contractsToUpdate;
         }
-    }
-    
+    } 
     public static void handlePostUpdate(List<Rental_Contract__c> newContracts, Map<Id, Rental_Contract__c> oldContracts) {
         // Collect IDs to query tenant emails
         Set<Id> contractIdsWithEjariUpdate = new Set<Id>();
